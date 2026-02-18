@@ -125,6 +125,21 @@ func TestEffectiveAllowedApps(t *testing.T) {
 	}
 }
 
+func TestTargetAppsFromRunning(t *testing.T) {
+	running := []string{"Safari", "Terminal", "Ghostty", "zen", "Visual Studio Code"}
+	opts := Options{
+		AllowedApps:    []string{"Visual Studio Code"},
+		DisallowedApps: []string{"Ghostty"},
+	}
+
+	got := targetAppsFromRunning(running, opts)
+	want := []string{"Ghostty", "Safari"}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected targets: got %v want %v", got, want)
+	}
+}
+
 func TestQuitAppPkillNoProcessIsAccepted(t *testing.T) {
 	mock := &mockExecutor{
 		results: map[string]callResult{

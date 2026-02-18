@@ -46,7 +46,7 @@ func EffectiveAllowedApps(opts Options) []string {
 	return resolveAllowedApps(opts)
 }
 
-func ExecuteWithOptions(executor Executor, opts Options) ([]string, error) {
+func PreviewWithOptions(executor Executor, opts Options) ([]string, error) {
 	if runtime.GOOS != "darwin" {
 		return nil, ErrUnsupportedOS
 	}
@@ -56,20 +56,23 @@ func ExecuteWithOptions(executor Executor, opts Options) ([]string, error) {
 		return nil, err
 	}
 
-	allowed := makeAllowedSet(resolveAllowedApps(opts))
-	for _, app := range selfExecutableNames() {
-		allowed[strings.ToLower(app)] = struct{}{}
+	return targetAppsFromRunning(running, opts), nil
+}
+
+func ExecuteWithOptions(executor Executor, opts Options) ([]string, error) {
+	targets, err := PreviewWithOptions(executor, opts)
+	if err != nil {
+		return nil, err
 	}
 
-	killed := make([]string, 0, len(running))
-	for _, app := range filterTargets(running, allowed) {
+	killed := make([]string, 0, len(targets))
+	for _, app := range targets {
 		if err := quitApp(executor, app); err != nil {
 			return killed, err
 		}
 		killed = append(killed, app)
 	}
 
-	sort.Strings(killed)
 	return killed, nil
 }
 
@@ -123,6 +126,17 @@ func resolveAllowedApps(opts Options) []string {
 
 func selfExecutableNames() []string {
 	return []string{"zen"}
+}
+
+func targetAppsFromRunning(running []string, opts Options) []string {
+	allowed := makeAllowedSet(resolveAllowedApps(opts))
+	for _, app := range selfExecutableNames() {
+		allowed[strings.ToLower(app)] = struct{}{}
+	}
+
+	targets := filterTargets(running, allowed)
+	sort.Strings(targets)
+	return targets
 }
 
 func runningAppNames(executor Executor) ([]string, error) {
