@@ -15,6 +15,7 @@ var ErrUnsupportedOS = errors.New("zenswitch supports macOS only")
 var defaultAllowedApps = []string{
 	"Terminal",
 	"iTerm2",
+	"Ghostty",
 	"Finder",
 	"Dock",
 	"System Settings",
@@ -31,7 +32,21 @@ func (OSExecutor) Run(name string, args ...string) ([]byte, error) {
 	return exec.Command(name, args...).CombinedOutput()
 }
 
+type Options struct {
+	AllowedApps           []string
+	DisallowedApps        []string
+	ReplaceDefaultAllowed bool
+}
+
 func Execute(executor Executor) ([]string, error) {
+	return ExecuteWithOptions(executor, Options{})
+}
+
+func EffectiveAllowedApps(opts Options) []string {
+	return resolveAllowedApps(opts)
+}
+
+func ExecuteWithOptions(executor Executor, opts Options) ([]string, error) {
 	if runtime.GOOS != "darwin" {
 		return nil, ErrUnsupportedOS
 	}
@@ -41,7 +56,7 @@ func Execute(executor Executor) ([]string, error) {
 		return nil, err
 	}
 
-	allowed := makeAllowedSet(defaultAllowedApps)
+	allowed := makeAllowedSet(resolveAllowedApps(opts))
 	for _, app := range selfExecutableNames() {
 		allowed[strings.ToLower(app)] = struct{}{}
 	}
@@ -56,6 +71,54 @@ func Execute(executor Executor) ([]string, error) {
 
 	sort.Strings(killed)
 	return killed, nil
+}
+
+func resolveAllowedApps(opts Options) []string {
+	allowed := make([]string, 0, len(defaultAllowedApps)+len(opts.AllowedApps))
+	if !opts.ReplaceDefaultAllowed {
+		allowed = append(allowed, defaultAllowedApps...)
+	}
+
+	seen := make(map[string]struct{}, len(allowed))
+	for _, app := range allowed {
+		seen[strings.ToLower(strings.TrimSpace(app))] = struct{}{}
+	}
+
+	for _, app := range opts.AllowedApps {
+		name := strings.TrimSpace(app)
+		if name == "" {
+			continue
+		}
+		key := strings.ToLower(name)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		allowed = append(allowed, name)
+	}
+
+	if len(opts.DisallowedApps) == 0 {
+		return allowed
+	}
+
+	disallowed := make(map[string]struct{}, len(opts.DisallowedApps))
+	for _, app := range opts.DisallowedApps {
+		name := strings.TrimSpace(app)
+		if name == "" {
+			continue
+		}
+		disallowed[strings.ToLower(name)] = struct{}{}
+	}
+
+	filtered := make([]string, 0, len(allowed))
+	for _, app := range allowed {
+		if _, blocked := disallowed[strings.ToLower(strings.TrimSpace(app))]; blocked {
+			continue
+		}
+		filtered = append(filtered, app)
+	}
+
+	return filtered
 }
 
 func selfExecutableNames() []string {

@@ -22,9 +22,29 @@ mv zen /usr/local/bin/zen
 zen
 ```
 
+ユーザー指定の許可リストを使う場合:
+
+```bash
+# 現在の有効な許可リストを表示（アプリは終了しない）
+zen --list
+
+# 既定の許可リストに追加
+zen --allow "Ghostty,Visual Studio Code"
+
+# 指定したアプリのみを許可（既定リストは使わない）
+zen --allow-only --allow "Ghostty,Visual Studio Code"
+
+# 許可リストから除外（既定リストにも追加リストにも適用）
+zen --disallow "Ghostty,Visual Studio Code"
+
+# オプション適用後の最終許可リストを表示
+zen --list --allow "Arc" --disallow "Ghostty"
+```
+
 終了対象から除外する既定アプリは以下です。
 - Terminal
 - iTerm2
+- Ghostty
 - Finder
 - Dock
 - System Settings

@@ -5,7 +5,21 @@
 - CLIアプリとして `go run ./cmd/zen` で実行できる形を維持する。
 - 仕様変更時は、まずロジック層をテストで担保してからCLI層を更新する。
 
+## 現在のCLI仕様
+- `zen` は、許可リストに含まれない起動中アプリを終了する（macOS専用）。
+- 許可リストの既定値は `Terminal` / `iTerm2` / `Ghostty` / `Finder` / `Dock` / `System Settings` / `Activity Monitor`。
+- `zen`（CLI自身）は常に終了対象外。
+- `--list` で、オプション適用後の最終許可リストを表示して終了する（アプリ終了は行わない）。
+- `--allow "App1,App2"` で既定許可リストに追加できる。
+- `--allow-only --allow "App1,App2"` で既定許可リストを使わず指定したアプリのみを許可できる。
+- `--disallow "App1,App2"` で許可リスト（既定 + `--allow`）から除外できる。
+- `--allow-only` は `--allow` とセット必須。
+
 ## 実行コマンド
 - フォーマット: `gofmt -w ./cmd ./internal`
 - テスト: `go test ./...`
 - 実行: `go run ./cmd/zen`
+- 許可リスト表示: `go run ./cmd/zen --list`
+- 許可リスト追加: `go run ./cmd/zen --allow "Ghostty,Visual Studio Code"`
+- 許可リスト置換: `go run ./cmd/zen --allow-only --allow "Ghostty,Visual Studio Code"`
+- 許可リスト除外: `go run ./cmd/zen --disallow "Ghostty,Visual Studio Code"`

@@ -47,6 +47,84 @@ func TestFilterTargets(t *testing.T) {
 	}
 }
 
+func TestResolveAllowedAppsDefaultPlusUser(t *testing.T) {
+	opts := Options{
+		AllowedApps: []string{"Ghostty", "Visual Studio Code"},
+	}
+
+	got := resolveAllowedApps(opts)
+	want := []string{
+		"Terminal",
+		"iTerm2",
+		"Ghostty",
+		"Finder",
+		"Dock",
+		"System Settings",
+		"Activity Monitor",
+		"Visual Studio Code",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected allow-list: got %v want %v", got, want)
+	}
+}
+
+func TestResolveAllowedAppsUserOnly(t *testing.T) {
+	opts := Options{
+		AllowedApps:           []string{"Ghostty", "Visual Studio Code"},
+		ReplaceDefaultAllowed: true,
+	}
+
+	got := resolveAllowedApps(opts)
+	want := []string{"Ghostty", "Visual Studio Code"}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected allow-list: got %v want %v", got, want)
+	}
+}
+
+func TestResolveAllowedAppsWithDisallowed(t *testing.T) {
+	opts := Options{
+		AllowedApps:    []string{"Visual Studio Code"},
+		DisallowedApps: []string{"ghostty", "Terminal", "Visual Studio Code"},
+	}
+
+	got := resolveAllowedApps(opts)
+	want := []string{
+		"iTerm2",
+		"Finder",
+		"Dock",
+		"System Settings",
+		"Activity Monitor",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected allow-list: got %v want %v", got, want)
+	}
+}
+
+func TestEffectiveAllowedApps(t *testing.T) {
+	opts := Options{
+		AllowedApps:    []string{"Visual Studio Code"},
+		DisallowedApps: []string{"Ghostty"},
+	}
+
+	got := EffectiveAllowedApps(opts)
+	want := []string{
+		"Terminal",
+		"iTerm2",
+		"Finder",
+		"Dock",
+		"System Settings",
+		"Activity Monitor",
+		"Visual Studio Code",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected allow-list: got %v want %v", got, want)
+	}
+}
+
 func TestQuitAppPkillNoProcessIsAccepted(t *testing.T) {
 	mock := &mockExecutor{
 		results: map[string]callResult{
