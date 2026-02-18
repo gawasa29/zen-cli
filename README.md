@@ -12,6 +12,13 @@ ZenSwitch は macOS 専用の CLI アプリです。`zen` を実行すると、�
 - Go 1.22 以上（ソースからビルドする場合）
 
 ## インストール
+推奨（Homebrew Tap）:
+```bash
+brew tap gawasa29/tap
+brew install gawasa29/tap/zenswitch
+```
+
+代替（ソースからビルド）:
 ```bash
 cd zenswitch
 go build -o zen ./cmd/zen
