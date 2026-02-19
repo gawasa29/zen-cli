@@ -1,5 +1,9 @@
 [English](README.md) | [日本語](README.ja.md)
 
+<p align="center">
+  <img src="assets/zen-cli-logo.png" alt="zen-cli logo" width="480">
+</p>
+
 # zen-cli 🧘 - Close distracting apps in one command
 
 zen-cli is a macOS-only focus CLI. Run `zen` to quit running apps that are not in your allow-list, so you can reset your desktop before deep work. It is designed for local-only operation with predictable defaults, and requires Go 1.22+ only when you build from source.
