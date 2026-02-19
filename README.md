@@ -1,6 +1,6 @@
-# ZenSwitch
+# zen-cli
 
-ZenSwitch は macOS 専用の CLI アプリです。`zen` を実行すると、許可リストに含まれない起動中アプリを終了します。
+zen-cli は macOS 専用の CLI アプリです。`zen` を実行すると、許可リストに含まれない起動中アプリを終了します。
 
 ## 概要
 - 集中前に不要アプリを一括で閉じる。
@@ -15,12 +15,12 @@ ZenSwitch は macOS 専用の CLI アプリです。`zen` を実行すると、�
 推奨（Homebrew Tap）:
 ```bash
 brew tap gawasa29/tap
-brew install gawasa29/tap/zenswitch
+brew install gawasa29/tap/zen-cli
 ```
 
 代替（ソースからビルド）:
 ```bash
-cd zenswitch
+cd zen-cli
 go build -o zen ./cmd/zen
 sudo install -m 755 zen /usr/local/bin/zen
 ```
@@ -64,8 +64,8 @@ zen -h
 
 ## 設定ファイル
 既定パス:
-- `XDG_CONFIG_HOME` がある場合: `$XDG_CONFIG_HOME/zenswitch/config.json`
-- ない場合: `~/.config/zenswitch/config.json`
+- `XDG_CONFIG_HOME` がある場合: `$XDG_CONFIG_HOME/zen-cli/config.json`
+- ない場合: `~/.config/zen-cli/config.json`
 
 形式:
 ```json

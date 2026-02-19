@@ -1,4 +1,4 @@
-package zenswitch
+package zencli
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var ErrUnsupportedOS = errors.New("zenswitch supports macOS only")
+var ErrUnsupportedOS = errors.New("zen-cli supports macOS only")
 
 // defaultAllowedApps is the predefined allow-list required by the product.
 var defaultAllowedApps = []string{

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"zenswitch/internal/zenswitch"
+	"zen-cli/internal/zencli"
 )
 
 func TestOptionsFromArgsDefault(t *testing.T) {
@@ -257,27 +257,57 @@ func TestOptionsFromArgsListAndDryRunConflict(t *testing.T) {
 	}
 }
 
+func TestDefaultConfigPathUsesXDGConfigHome(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "/tmp/xdg-config")
+
+	got, err := defaultConfigPath()
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+
+	want := filepath.Join("/tmp/xdg-config", "zen-cli", "config.json")
+	if got != want {
+		t.Fatalf("unexpected path: got %q want %q", got, want)
+	}
+}
+
+func TestDefaultConfigPathFallsBackToHome(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", "")
+	t.Setenv("HOME", home)
+
+	got, err := defaultConfigPath()
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+
+	want := filepath.Join(home, ".config", "zen-cli", "config.json")
+	if got != want {
+		t.Fatalf("unexpected path: got %q want %q", got, want)
+	}
+}
+
 func TestValidateOptionsAllowOnlyRequiresAllow(t *testing.T) {
-	err := validateOptions(zenswitch.Options{ReplaceDefaultAllowed: true})
+	err := validateOptions(zencli.Options{ReplaceDefaultAllowed: true})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
 }
 
 func TestMergeOptionsWithConfigBase(t *testing.T) {
-	base := zenswitch.Options{
+	base := zencli.Options{
 		AllowedApps:           []string{"Arc"},
 		DisallowedApps:        []string{"Slack"},
 		ReplaceDefaultAllowed: true,
 	}
-	cli := zenswitch.Options{
+	cli := zencli.Options{
 		AllowedApps:           []string{"Ghostty"},
 		DisallowedApps:        []string{"Arc"},
 		ReplaceDefaultAllowed: false,
 	}
 
 	got := mergeOptions(base, cli, false)
-	want := zenswitch.Options{
+	want := zencli.Options{
 		AllowedApps:           []string{"Arc", "Ghostty"},
 		DisallowedApps:        []string{"Slack", "Arc"},
 		ReplaceDefaultAllowed: true,
@@ -289,8 +319,8 @@ func TestMergeOptionsWithConfigBase(t *testing.T) {
 }
 
 func TestMergeOptionsAllowOnlyOverride(t *testing.T) {
-	base := zenswitch.Options{ReplaceDefaultAllowed: true}
-	cli := zenswitch.Options{ReplaceDefaultAllowed: false}
+	base := zencli.Options{ReplaceDefaultAllowed: true}
+	cli := zencli.Options{ReplaceDefaultAllowed: false}
 
 	got := mergeOptions(base, cli, true)
 	if got.ReplaceDefaultAllowed {
@@ -304,7 +334,7 @@ func TestLoadOptionsFromConfigOptionalMissing(t *testing.T) {
 		t.Fatalf("expected nil error, got %v", err)
 	}
 
-	if !reflect.DeepEqual(got, zenswitch.Options{}) {
+	if !reflect.DeepEqual(got, zencli.Options{}) {
 		t.Fatalf("unexpected options: %+v", got)
 	}
 }
@@ -333,7 +363,7 @@ func TestLoadOptionsFromConfig(t *testing.T) {
 		t.Fatalf("expected nil error, got %v", err)
 	}
 
-	want := zenswitch.Options{
+	want := zencli.Options{
 		ReplaceDefaultAllowed: true,
 		AllowedApps:           []string{"Ghostty", "Visual Studio Code"},
 		DisallowedApps:        []string{"Slack"},
@@ -346,7 +376,7 @@ func TestLoadOptionsFromConfig(t *testing.T) {
 func TestSaveOptionsToConfigRoundtrip(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	opts := zenswitch.Options{
+	opts := zencli.Options{
 		ReplaceDefaultAllowed: true,
 		AllowedApps:           []string{"Ghostty"},
 		DisallowedApps:        []string{"Slack"},
@@ -366,13 +396,13 @@ func TestSaveOptionsToConfigRoundtrip(t *testing.T) {
 }
 
 func TestAddAllowedApps(t *testing.T) {
-	base := zenswitch.Options{
+	base := zencli.Options{
 		AllowedApps:    []string{"Ghostty"},
 		DisallowedApps: []string{"Arc", "Slack"},
 	}
 
 	got := addAllowedApps(base, []string{"Arc", "Visual Studio Code"})
-	want := zenswitch.Options{
+	want := zencli.Options{
 		AllowedApps:    []string{"Ghostty", "Arc", "Visual Studio Code"},
 		DisallowedApps: []string{"Slack"},
 	}
@@ -382,13 +412,13 @@ func TestAddAllowedApps(t *testing.T) {
 }
 
 func TestRemoveAllowedApps(t *testing.T) {
-	base := zenswitch.Options{
+	base := zencli.Options{
 		AllowedApps:    []string{"Ghostty", "Visual Studio Code"},
 		DisallowedApps: []string{"Slack"},
 	}
 
 	got := removeAllowedApps(base, []string{"Ghostty", "Arc"})
-	want := zenswitch.Options{
+	want := zencli.Options{
 		AllowedApps:    []string{"Visual Studio Code"},
 		DisallowedApps: []string{"Slack", "Ghostty", "Arc"},
 	}
@@ -402,7 +432,7 @@ func TestPrintAllowedApps(t *testing.T) {
 	printAllowedApps(&out, []string{"Terminal", "Ghostty"})
 
 	got := out.String()
-	want := "ZenSwitch allowed apps:\n- Terminal\n- Ghostty\n"
+	want := "zen-cli allowed apps:\n- Terminal\n- Ghostty\n"
 	if got != want {
 		t.Fatalf("unexpected output: got %q want %q", got, want)
 	}
@@ -413,7 +443,7 @@ func TestPrintDryRunTargets(t *testing.T) {
 	printDryRunTargets(&out, []string{"Safari", "Slack"})
 
 	got := out.String()
-	want := "ZenSwitch dry-run targets:\n- Safari\n- Slack\n"
+	want := "zen-cli dry-run targets:\n- Safari\n- Slack\n"
 	if got != want {
 		t.Fatalf("unexpected output: got %q want %q", got, want)
 	}
@@ -424,7 +454,7 @@ func TestPrintDryRunTargetsEmpty(t *testing.T) {
 	printDryRunTargets(&out, nil)
 
 	got := out.String()
-	want := "ZenSwitch dry-run: no target apps would be closed.\n"
+	want := "zen-cli dry-run: no target apps would be closed.\n"
 	if got != want {
 		t.Fatalf("unexpected output: got %q want %q", got, want)
 	}

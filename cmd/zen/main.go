@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"zenswitch/internal/zenswitch"
+	"zen-cli/internal/zencli"
 )
 
 type zenCommand string
@@ -27,7 +27,7 @@ type parsedArgs struct {
 	command       zenCommand
 	commandApps   []string
 	helpTopic     string
-	options       zenswitch.Options
+	options       zencli.Options
 	dryRun        bool
 	configPath    string
 	configPathSet bool
@@ -43,7 +43,7 @@ type configFile struct {
 func main() {
 	parsed, err := optionsFromArgs(os.Args[1:])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ZenSwitch failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "zen-cli failed: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -56,7 +56,7 @@ func main() {
 	if !parsed.configPathSet {
 		configPath, err = defaultConfigPath()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "ZenSwitch failed: %v\n", err)
+			fmt.Fprintf(os.Stderr, "zen-cli failed: %v\n", err)
 			os.Exit(1)
 		}
 	}
@@ -64,11 +64,11 @@ func main() {
 	if parsed.command == commandAdd || parsed.command == commandRemove {
 		configOpts, err := loadOptionsFromConfig(configPath, false)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "ZenSwitch failed: %v\n", err)
+			fmt.Fprintf(os.Stderr, "zen-cli failed: %v\n", err)
 			os.Exit(1)
 		}
 
-		var updated zenswitch.Options
+		var updated zencli.Options
 		if parsed.command == commandAdd {
 			updated = addAllowedApps(configOpts, parsed.commandApps)
 		} else {
@@ -76,62 +76,62 @@ func main() {
 		}
 
 		if err := saveOptionsToConfig(configPath, updated); err != nil {
-			fmt.Fprintf(os.Stderr, "ZenSwitch failed: %v\n", err)
+			fmt.Fprintf(os.Stderr, "zen-cli failed: %v\n", err)
 			os.Exit(1)
 		}
 
-		fmt.Fprintln(os.Stdout, "ZenSwitch config updated.")
-		printAllowedApps(os.Stdout, zenswitch.EffectiveAllowedApps(updated))
+		fmt.Fprintln(os.Stdout, "zen-cli config updated.")
+		printAllowedApps(os.Stdout, zencli.EffectiveAllowedApps(updated))
 		return
 	}
 
 	configOpts, err := loadOptionsFromConfig(configPath, parsed.configPathSet)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ZenSwitch failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "zen-cli failed: %v\n", err)
 		os.Exit(1)
 	}
 
 	opts := mergeOptions(configOpts, parsed.options, parsed.allowOnlySet)
 	if err := validateOptions(opts); err != nil {
-		fmt.Fprintf(os.Stderr, "ZenSwitch failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "zen-cli failed: %v\n", err)
 		os.Exit(1)
 	}
 
 	if parsed.command == commandList {
-		printAllowedApps(os.Stdout, zenswitch.EffectiveAllowedApps(opts))
+		printAllowedApps(os.Stdout, zencli.EffectiveAllowedApps(opts))
 		return
 	}
 
 	if parsed.dryRun {
-		targets, err := zenswitch.PreviewWithOptions(zenswitch.OSExecutor{}, opts)
+		targets, err := zencli.PreviewWithOptions(zencli.OSExecutor{}, opts)
 		if err != nil {
-			if errors.Is(err, zenswitch.ErrUnsupportedOS) {
-				fmt.Fprintln(os.Stderr, "ZenSwitch is macOS-only.")
+			if errors.Is(err, zencli.ErrUnsupportedOS) {
+				fmt.Fprintln(os.Stderr, "zen-cli is macOS-only.")
 				os.Exit(2)
 			}
-			fmt.Fprintf(os.Stderr, "ZenSwitch failed: %v\n", err)
+			fmt.Fprintf(os.Stderr, "zen-cli failed: %v\n", err)
 			os.Exit(1)
 		}
 		printDryRunTargets(os.Stdout, targets)
 		return
 	}
 
-	killed, err := zenswitch.ExecuteWithOptions(zenswitch.OSExecutor{}, opts)
+	killed, err := zencli.ExecuteWithOptions(zencli.OSExecutor{}, opts)
 	if err != nil {
-		if errors.Is(err, zenswitch.ErrUnsupportedOS) {
-			fmt.Fprintln(os.Stderr, "ZenSwitch is macOS-only.")
+		if errors.Is(err, zencli.ErrUnsupportedOS) {
+			fmt.Fprintln(os.Stderr, "zen-cli is macOS-only.")
 			os.Exit(2)
 		}
-		fmt.Fprintf(os.Stderr, "ZenSwitch failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "zen-cli failed: %v\n", err)
 		os.Exit(1)
 	}
 
 	if len(killed) == 0 {
-		fmt.Println("ZenSwitch: no target apps were running.")
+		fmt.Println("zen-cli: no target apps were running.")
 		return
 	}
 
-	fmt.Println("ZenSwitch closed apps:")
+	fmt.Println("zen-cli closed apps:")
 	for _, app := range killed {
 		fmt.Printf("- %s\n", app)
 	}
@@ -216,7 +216,7 @@ func optionsFromArgs(args []string) (parsedArgs, error) {
 
 	return parsedArgs{
 		command: command,
-		options: zenswitch.Options{
+		options: zencli.Options{
 			AllowedApps:           parseAllowApps(*allow),
 			DisallowedApps:        parseAllowApps(*disallow),
 			ReplaceDefaultAllowed: *allowOnly,
@@ -239,42 +239,42 @@ func isHelpToken(arg string) bool {
 
 func defaultConfigPath() (string, error) {
 	if xdg := strings.TrimSpace(os.Getenv("XDG_CONFIG_HOME")); xdg != "" {
-		return filepath.Join(xdg, "zenswitch", "config.json"), nil
+		return filepath.Join(xdg, "zen-cli", "config.json"), nil
 	}
 
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve home directory: %w", err)
 	}
-	return filepath.Join(home, ".config", "zenswitch", "config.json"), nil
+	return filepath.Join(home, ".config", "zen-cli", "config.json"), nil
 }
 
-func loadOptionsFromConfig(path string, required bool) (zenswitch.Options, error) {
+func loadOptionsFromConfig(path string, required bool) (zencli.Options, error) {
 	if strings.TrimSpace(path) == "" {
-		return zenswitch.Options{}, nil
+		return zencli.Options{}, nil
 	}
 
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) && !required {
-			return zenswitch.Options{}, nil
+			return zencli.Options{}, nil
 		}
-		return zenswitch.Options{}, fmt.Errorf("failed to read config file %s: %w", path, err)
+		return zencli.Options{}, fmt.Errorf("failed to read config file %s: %w", path, err)
 	}
 
 	var cfg configFile
 	if err := json.Unmarshal(raw, &cfg); err != nil {
-		return zenswitch.Options{}, fmt.Errorf("failed to parse config file %s: %w", path, err)
+		return zencli.Options{}, fmt.Errorf("failed to parse config file %s: %w", path, err)
 	}
 
-	return zenswitch.Options{
+	return zencli.Options{
 		AllowedApps:           cfg.AllowedApps,
 		DisallowedApps:        cfg.DisallowedApps,
 		ReplaceDefaultAllowed: cfg.ReplaceDefaultAllowed,
 	}, nil
 }
 
-func saveOptionsToConfig(path string, opts zenswitch.Options) error {
+func saveOptionsToConfig(path string, opts zencli.Options) error {
 	if strings.TrimSpace(path) == "" {
 		return errors.New("config path is empty")
 	}
@@ -301,8 +301,8 @@ func saveOptionsToConfig(path string, opts zenswitch.Options) error {
 	return nil
 }
 
-func mergeOptions(base zenswitch.Options, cli zenswitch.Options, allowOnlySet bool) zenswitch.Options {
-	merged := zenswitch.Options{
+func mergeOptions(base zencli.Options, cli zencli.Options, allowOnlySet bool) zencli.Options {
+	merged := zencli.Options{
 		AllowedApps:           append([]string{}, base.AllowedApps...),
 		DisallowedApps:        append([]string{}, base.DisallowedApps...),
 		ReplaceDefaultAllowed: base.ReplaceDefaultAllowed,
@@ -318,20 +318,20 @@ func mergeOptions(base zenswitch.Options, cli zenswitch.Options, allowOnlySet bo
 	return merged
 }
 
-func validateOptions(opts zenswitch.Options) error {
+func validateOptions(opts zencli.Options) error {
 	if opts.ReplaceDefaultAllowed && len(opts.AllowedApps) == 0 {
 		return errors.New("--allow-only requires allow apps in CLI or config")
 	}
 	return nil
 }
 
-func addAllowedApps(opts zenswitch.Options, apps []string) zenswitch.Options {
+func addAllowedApps(opts zencli.Options, apps []string) zencli.Options {
 	opts.AllowedApps = mergeAppLists(opts.AllowedApps, apps)
 	opts.DisallowedApps = removeFromAppList(opts.DisallowedApps, apps)
 	return opts
 }
 
-func removeAllowedApps(opts zenswitch.Options, apps []string) zenswitch.Options {
+func removeAllowedApps(opts zencli.Options, apps []string) zencli.Options {
 	opts.AllowedApps = removeFromAppList(opts.AllowedApps, apps)
 	opts.DisallowedApps = mergeAppLists(opts.DisallowedApps, apps)
 	return opts
@@ -390,11 +390,11 @@ func removeFromAppList(base []string, toRemove []string) []string {
 
 func printAllowedApps(out io.Writer, apps []string) {
 	if len(apps) == 0 {
-		fmt.Fprintln(out, "ZenSwitch allowed apps: (none)")
+		fmt.Fprintln(out, "zen-cli allowed apps: (none)")
 		return
 	}
 
-	fmt.Fprintln(out, "ZenSwitch allowed apps:")
+	fmt.Fprintln(out, "zen-cli allowed apps:")
 	for _, app := range apps {
 		fmt.Fprintf(out, "- %s\n", app)
 	}
@@ -402,11 +402,11 @@ func printAllowedApps(out io.Writer, apps []string) {
 
 func printDryRunTargets(out io.Writer, apps []string) {
 	if len(apps) == 0 {
-		fmt.Fprintln(out, "ZenSwitch dry-run: no target apps would be closed.")
+		fmt.Fprintln(out, "zen-cli dry-run: no target apps would be closed.")
 		return
 	}
 
-	fmt.Fprintln(out, "ZenSwitch dry-run targets:")
+	fmt.Fprintln(out, "zen-cli dry-run targets:")
 	for _, app := range apps {
 		fmt.Fprintf(out, "- %s\n", app)
 	}

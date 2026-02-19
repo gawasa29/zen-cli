@@ -1,4 +1,4 @@
-package zenswitch
+package zencli
 
 import (
 	"errors"

@@ -1,3 +1,3 @@
-module zenswitch
+module zen-cli
 
 go 1.22
