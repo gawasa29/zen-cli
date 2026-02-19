@@ -13,7 +13,6 @@ zen-cli は macOS 専用の集中用 CLI です。`zen` を実行すると、許
 
 ### Package manager
 ```bash
-brew tap gawasa29/tap
 brew install gawasa29/tap/zen-cli
 ```
 

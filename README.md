@@ -13,7 +13,6 @@ zen-cli is a macOS-only focus CLI. Run `zen` to quit running apps that are not i
 
 ### Package manager
 ```bash
-brew tap gawasa29/tap
 brew install gawasa29/tap/zen-cli
 ```
 
