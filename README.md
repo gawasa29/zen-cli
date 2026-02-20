@@ -1,7 +1,7 @@
 [English](README.md) | [日本語](README.ja.md)
 
 <p align="center">
-  <img src="assets/zen-cli-logo.png" alt="zen-cli logo" width="480">
+  <img src="assets/zen-cli-hero-20260220.png" alt="zen-cli logo" width="480">
 </p>
 
 # zen-cli 🧘 - Close distracting apps in one command
